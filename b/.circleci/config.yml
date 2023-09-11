@@ -12,7 +12,7 @@ jobs:
           path: /home/circleci/project
       - run:
           command: |
-            python module-b/app2.py
+            python b/app2.py
 
 workflows:
   module-b-workflow:
