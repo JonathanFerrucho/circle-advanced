@@ -29,8 +29,8 @@ workflows:
           # If C is modified, then the jobs for both C and B (as a dependency) will run
           modules: |
             module-a
-            module-b
-            module-c module-b
+            b
+            module-c b
 
 orbs:
   # An "embedded" orb to facilitate config splitting
