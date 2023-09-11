@@ -15,6 +15,6 @@ jobs:
             python b/app2.py
 
 workflows:
-  module-b-workflow:
+  b-workflow:
      jobs:
       - build-App2
