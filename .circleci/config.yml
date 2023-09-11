@@ -3,7 +3,7 @@
 
 version: 2.1
 
-setup: true
+setup: << pipeline.parameters.run-setup >>
 
 # All pipeline parameters need to be defined equally both for the setup workflow and main workflows
 # These parameters will be passed to both of them
@@ -12,35 +12,10 @@ parameters:
     description: Whether it is a setup workflow or a continuation
     type: boolean
     default: true
-  force-all:
-    description: Emergency valve - forcibly build all the modules
-    type: boolean
-    default: false
   custom-parameter:
     description: Some string to pass
     type: string
     default: ""
-
-# Custom commands aimed for the main workflows and jobs
-commands:
-  common-say-hello:
-    parameters:
-      to:
-        description: To whom you say hello
-        type: string
-        default: you anonymous
-    steps:
-      - run: echo 'Greetings to << parameters.to >> from the shared command!'
-      - run: echo 'The value of `custom-parameter` was "<< pipeline.parameters.custom-parameter >>"'
-
-# Common jobs for the main workflows
-jobs:
-  common-pre:
-    docker:
-      - image: alpine
-    steps:
-      - common-say-hello
-      - run: echo 'Jobs with `common-` prefix are intended to be shared among modules'
 
 workflows:
   # The setup workflow
@@ -48,7 +23,6 @@ workflows:
     when: << pipeline.parameters.run-setup >>
     jobs:
       - config-splitting/setup-dynamic-config:
-          force-all: << pipeline.parameters.force-all >>
           base-revision: main
           # If A is modified, the job for A will run
           # Similarly if B is modified, the job for B will run
@@ -85,16 +59,13 @@ orbs:
             description: Revision to compare with the current HEAD
             type: string
             default: main
-          force-all:
-            description: Emergency valve - forcibly build all the modules
-            type: boolean
-            default: false
+
         steps:
           - run:
               name: Generate the list of modules having changes
               command: |
-                # Add each module to `modules-filtered` if 1) `force-all` is set to `true`, 2) there is a diff against `base-revision`, 3) there is no `HEAD~1` (i.e., this is the very first commit for the repo) OR 4) there is a diff against the previous commit
-                cat \<< EOD | sed -e '/^$/d' | while read row; do module="$(echo "$row" | awk '{ print $1 }')"; if [ << parameters.force-all >> == 'true' ] || [ $(git diff --name-only << parameters.base-revision >> "$module" | wc -l) -gt 0 ] || (! git rev-parse --verify HEAD~1) || [ $(git diff --name-only HEAD~1 "$module" | wc -l) -gt 0 ]; then echo "$row" | sed -e 's/ /\n/g' >> << parameters.modules-filtered >>; fi; done
+                # Add each module to `modules-filtered` if  2) there is a diff against `base-revision`, 3) there is no `HEAD~1` (i.e., this is the very first commit for the repo) OR 4) there is a diff against the previous commit
+                cat \<< EOD | sed -e '/^$/d' | while read row; do module="$(echo "$row" | awk '{ print $1 }')"; if [ $(git diff --name-only << parameters.base-revision >> "$module" | wc -l) -gt 0 ] || (! git rev-parse --verify HEAD~1) || [ $(git diff --name-only HEAD~1 "$module" | wc -l) -gt 0 ]; then echo "$row" | sed -e 's/ /\n/g' >> << parameters.modules-filtered >>; fi; done
                 << parameters.modules >>
                 EOD
 
@@ -146,10 +117,6 @@ orbs:
             description: Revision to compare with the current HEAD
             type: string
             default: main
-          force-all:
-            description: Emergency valve - forcibly build all the modules
-            type: boolean
-            default: false
           modules-filtered:
             description: Path to the file where the filtered list of modules is generated
             type: string
@@ -173,7 +140,6 @@ orbs:
               modules: << parameters.modules >>
               modules-filtered: << parameters.modules-filtered >>
               base-revision: << parameters.base-revision >>
-              force-all: << parameters.force-all >>
           - merge-modular-configs:
               modules: << parameters.modules-filtered >>
               shared-config: << parameters.shared-config >>
