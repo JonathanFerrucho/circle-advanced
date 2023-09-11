@@ -14,6 +14,6 @@ jobs:
             python module-c/app3.py
 
 workflows:
-  module-a-workflow:
+  module-c-workflow:
      jobs:
       - build-App3
