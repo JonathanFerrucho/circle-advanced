@@ -1,1 +1,1 @@
-print("Script App 2 test solos")
+print("Script App 2 test orb privado")
